@@ -55,7 +55,7 @@ def tick_buttons():
     global brake_upgrade_price
     global brake_friction
     for button in buttons:
-        button.draw()
+        button.draw(window)
         if button.get_clicked():
             if button == spin_button:
                 spin()
@@ -145,7 +145,7 @@ TEXT_COLOR = green
 clock = pygame.time.Clock()
 
 fidget_spinner_width, fidget_spinner_height = 350, 350
-fidget_spinner_image = pygame.transform.scale(pygame.image.load("fidgetspinnerdefault.png"), (fidget_spinner_width, fidget_spinner_height))
+fidget_spinner_image = pygame.transform.scale(pygame.image.load("resources/images/fidgetspinnerdefault.png"), (fidget_spinner_width, fidget_spinner_height))
 fidget_spinner_rotation = 0
 
 
@@ -174,14 +174,13 @@ brake_friction = .5
 
 button_height = height/25
 buttons = []
-
-spin_button = ui.button(window, width/2-button_height*1.25, height-button_height*2, button_height*2.5, button_height, "Spin")
-upgrade_speed_button = ui.button(window, width-button_height*10, button_height, button_height*7.5, button_height, "Upgrade Speed: " + str(upgrade_speed_price))
-decrease_friction_button = ui.button(window, width-button_height*10, button_height*2, button_height*7.5, button_height, "Decrease Friction: " + str(decrease_friction_price))
-fan_button = ui.button(window, width-button_height*10, button_height*3, button_height*5, button_height, "Buy Fan: " + str(fan_price))
-fan_upgrade_button = ui.button(window, width-button_height*10, button_height*4, button_height*5, button_height, "Upgrade Fan: " + str(fan_upgrade_price))
-brake_button = ui.button(window, width-button_height*10, button_height*5, button_height*5, button_height, "Buy Brake: " + str(brake_cost))
-brake_upgrade_button = ui.button(window, width-button_height*10, button_height*6, button_height*5, button_height, "Upgrade Brake: " + str(brake_upgrade_price))
+spin_button = ui.Button(width/2-button_height*1.25, height-button_height*2, button_height*2.5, button_height, "Spin")
+upgrade_speed_button = ui.Button(width-button_height*10, button_height, button_height*7.5, button_height, "Upgrade Speed: " + str(upgrade_speed_price))
+decrease_friction_button = ui.Button(width-button_height*10, button_height*2, button_height*7.5, button_height, "Decrease Friction: " + str(decrease_friction_price))
+fan_button = ui.Button(width-button_height*10, button_height*3, button_height*5, button_height, "Buy Fan: " + str(fan_price))
+fan_upgrade_button = ui.Button(width-button_height*10, button_height*4, button_height*5, button_height, "Upgrade Fan: " + str(fan_upgrade_price))
+brake_button = ui.Button(width-button_height*10, button_height*5, button_height*5, button_height, "Buy Brake: " + str(brake_cost))
+brake_upgrade_button = ui.Button(width-button_height*10, button_height*6, button_height*5, button_height, "Upgrade Brake: " + str(brake_upgrade_price))
 buttons.append(spin_button)
 buttons.append(upgrade_speed_button)
 buttons.append(decrease_friction_button)
