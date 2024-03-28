@@ -220,11 +220,11 @@ slider_width = width/15*2
 slider_height = height/25*2
 
 red_slider = ui.Slider(width/2, height/2, slider_width, slider_height, (0, 255), 1, "red", 255)
-red_slider.set_theme("red");
+red_slider.set_theme("red")
 blue_slider = ui.Slider(width/2+slider_width, height/2, slider_width, slider_height, (0, 255), 1, "blue", 255)
-blue_slider.set_theme("blue");
+blue_slider.set_theme("blue")
 green_slider = ui.Slider(width/2, height/2+slider_height, slider_width, slider_height, (0, 255), 1, "green", 255)
-green_slider.set_theme("green");
+green_slider.set_theme("green")
 speed_slider = ui.Slider(width-slider_width, height-slider_height, slider_width, slider_height, (1, 50), 1, "speed", 1)
 
 # sliders.append(red_slider)
