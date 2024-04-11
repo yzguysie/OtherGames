@@ -1,7 +1,7 @@
 import pygame
 import pygame.gfxdraw
 pygame.init()
-#import math
+import math
 import random
 import time
 
@@ -108,8 +108,12 @@ class Cell:
 
         self.extraxspeed = 0
         self.extrayspeed = 0
+        self.max_speed = 100
         self.x = x
         self.y = y
+        self.xspeed = 0
+        self.yspeed = 0
+        self.inertia = 5
         self.mass = mass
         self.radius = mass**(1/2)
         self.smoothradius = self.radius
@@ -143,28 +147,26 @@ class Cell:
     def move(self):
         if self.player == 0:
                 x, y = pygame.mouse.get_pos()
-                x = x
-                y = y
-
-
 
                 xdiff = x-int(self.x/scale-camera_x+.5)
                 ydiff = y-int(self.y/scale-camera_y+.5)
-                if fps_ < fps/smooth_fix_limit or fps_ > fps*smooth_fix_limit:
-                        self.xspeed = (xdiff)/fps
-                        self.yspeed = (ydiff)/fps
-                else:
-                        self.xspeed = (xdiff)/fps_
-                        self.yspeed = (ydiff)/fps_
+
+                angle = math.atan2(ydiff, xdiff)
+                vector = pygame.math.Vector2(math.cos(angle), math.sin(angle))
+                velocity = min(self.max_speed, math.sqrt(xdiff**2+ydiff**2))
+                self.xspeed = velocity*vector[0]/fps
+                self.yspeed = velocity*vector[1]/fps
+                # if fps_ < fps/smooth_fix_limit or fps_ > fps*smooth_fix_limit:
+                        
+                #         self.xspeed += (xforce)/fps
+                #         self.yspeed += (yforce)/fps
+                # else:
+                #         self.xspeed = (self.xspeed*self.inertia)+(xforce)/fps_
+                #         self.yspeed = (self.yspeed*self.inertia)+(yforce)/fps_
 
 
         else:
-               
                 x, y = self.target.x, self.target.y
-                x = x
-                y = y
-
-
 
                 xdiff = x-self.x
                 ydiff = y-self.y
@@ -176,16 +178,16 @@ class Cell:
                         self.yspeed = (ydiff)/fps_*10
 
 
-        total_speed = (abs(self.xspeed)**2+abs(self.yspeed)**2)**(1/2)
-        if self.xspeed**2+self.yspeed**2 > player_speed**2 or xdiff**2+ydiff**2>self.radius**2:
-                percent_x = self.xspeed/total_speed
-                percent_y = self.yspeed/total_speed
+        # total_speed = (abs(self.xspeed)**2+abs(self.yspeed)**2)**(1/2)
+        # if self.xspeed**2+self.yspeed**2 > player_speed**2 or xdiff**2+ydiff**2>self.radius**2:
+        #         percent_x = self.xspeed/total_speed
+        #         percent_y = self.yspeed/total_speed
 
                
                        
                
-                self.xspeed = player_speed*percent_x
-                self.yspeed = player_speed*percent_y
+        #         self.xspeed = player_speed*percent_x
+        #         self.yspeed = player_speed*percent_y
        
        
        
@@ -574,6 +576,7 @@ class brown_virus:
         self.x = x
         self.y = y
         self.mass = mass
+        self.startmass = mass
         self.radius = mass**(1/2)
         self.smoothradius = self.radius
        
@@ -582,14 +585,12 @@ class brown_virus:
         brown_virus_id += 1
 
     def tick(self):
-        if self.mass > brown_virus_mass:
+        if self.mass > self.startmass:
             self.spit()
-            #print("sac")
-        """
-        for thing in cells:
-               
-            if thing.mass > self.mass*1.3 and self.colliding(thing):
-                thing.consume_brown_virus(self)"""
+        
+        elif random.randint(0, fps) == 0:
+             self.spit() 
+            
         self.draw_high_quality()
 
 
@@ -597,7 +598,7 @@ class brown_virus:
 
     def spit(self):
         spit_mult = 1
-        spit_mass = self.radius
+        spit_mass = 2
         rand_color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
         spatted = agar(self.x+random.randint(-100, 100)/100.0, self.y+random.randint(-100, 100)/100.0, spit_mass, rand_color)
         xspeed=spatted.x-self.x
@@ -611,6 +612,7 @@ class brown_virus:
             print("WARN: Spit took too long!")
         agars.add(spatted)
         self.mass -= spit_mass/spit_mult
+        self.mass = max(self.mass, self.startmass)
        
 
        
@@ -817,7 +819,7 @@ while playing:
              cells.append(Cell(random.randint(-border_width, border_width), random.randint(-border_height, border_height), bot_start_mass, red, i))
 
     for thing in players[player]:
-        thing.color = green
+        thing.color = light_blue
    
     window.fill(background_color)
     for i in range(len(players)):
