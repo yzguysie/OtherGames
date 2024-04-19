@@ -31,7 +31,7 @@ class Sprite():
 def spin():
     global fidget_spinner_speed
     global fan_on
-    fidget_spinner_speed /= 1.5
+    fidget_spinner_speed /= 1.2
     fidget_spinner_speed += fidget_spinner_spin_speed/100*random.randint(70,135)
 
 
@@ -191,7 +191,7 @@ buttons.append(brake_upgrade_button)
 
 
 
-coins = 5000
+coins = 0
 
 font = 'arial'
 font_width = int(width/100+1)
