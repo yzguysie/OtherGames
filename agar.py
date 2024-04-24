@@ -1,9 +1,10 @@
 import pygame
 import pygame.gfxdraw
-pygame.init()
 import math
 import random
 import time
+from configparser import ConfigParser
+
 
 """
 Todo:
@@ -11,7 +12,38 @@ optimize game
 make it so when one cell increases mass, camera moves smoothly
 idk
 """
-class Sprite():
+
+
+class Colors:
+    white = (255, 255, 255)
+    black = (0, 0, 0)
+
+    red = (255, 0, 0)
+    green = (0, 255, 0)
+    blue = (0, 0, 255)
+    blue = (25, 55, 225)
+
+    light_red = (255, 64, 64)
+    dark_red = (128, 0, 0)
+    light_green = (64, 255, 64)
+    dark_green = (0, 128, 0)    
+
+    yellow = (255, 255, 0)
+    purple = (255, 0, 255)
+    turquoise = (0, 255, 255)
+    cyan = turquoise
+
+    brown = (139,69,19)
+    brown = (139,69,19)
+    brown = (150,75,0)
+
+    gray = (128, 128, 128)
+    dark_gray = (64, 64, 64)
+    light_gray = (192, 192, 192)
+    light_blue = (102, 178, 255)
+    dark_blue = (0, 0, 192)
+
+class Sprite:
     def __init__(self, image, x, y, rotation):
         self.x = x
         self.y = y
@@ -78,135 +110,6 @@ class Camera:
     def get_screen_y(self, y):
         return (y/self.scale-self.x)
         
-
-
-
-from configparser import ConfigParser
-
-config = ConfigParser()
-
-# parse existing file
-config.read('agar.ini')
-
-# read values from a section
-fps = config.getint('settings', 'fps')
-speed = config.getfloat('settings', 'speed')
-
-gamemode = config.getint('settings', 'gamemode')
-border_width = config.getint('settings', 'border_width')
-border_height = config.getint('settings', 'border_height')
-
-virus_count = config.getint('settings', 'virus_count')
-virus_mass = config.getint('settings', 'virus_mass')
-
-brown_virus_count = config.getint('settings', 'brown_virus_count')
-brown_virus_mass = config.getint('settings', 'brown_virus_mass')
-
-
-player_start_mass = config.getint('settings', 'player_start_mass')
-player_speed = config.getfloat('settings', 'player_speed')
-player_min_mass = config.getint('settings', 'player_min_mass')
-player_max_cells = config.getint('settings', 'player_max_cells')
-player_max_cell_mass = config.getint('settings', 'player_max_cell_mass')
-player_decay_rate = config.getfloat('settings', 'player_decay_rate')
-player_recombine_time = config.getfloat('settings', 'player_recombine_time')
-player_eject_min_mass = config.getint('settings', 'player_eject_min_mass')
-player_split_min_mass = config.getint('settings', 'player_split_min_mass')
-
-ejected_size = config.getint('settings', 'ejected_size')
-ejected_loss = config.getint('settings', 'ejected_loss')
-ejected_speed = config.getint('settings', 'ejected_speed')
-
-bot_count = config.getint('settings', 'bot_count')
-bot_start_mass = config.getint('settings', 'bot_start_mass')
-
-minion_count = config.getint('settings', 'minion_count')
-minion_start_mass = config.getint('settings', 'minion_start_mass')
-
-
-
-
-width, height = 1280, 720
-
-virus_image = pygame.image.load("resources/images/virus.png")
-
-aa_agar = True
-class Colors:
-    white = (255, 255, 255)
-    black = (0, 0, 0)
-
-    red = (255, 0, 0)
-    green = (0, 255, 0)
-    blue = (0, 0, 255)
-    blue = (25, 55, 225)
-
-    light_red = (255, 64, 64)
-    dark_red = (128, 0, 0)
-    light_green = (64, 255, 64)
-    dark_green = (0, 128, 0)    
-
-    yellow = (255, 255, 0)
-    purple = (255, 0, 255)
-    turquoise = (0, 255, 255)
-    cyan = turquoise
-
-    brown = (139,69,19)
-    brown = (139,69,19)
-    brown = (150,75,0)
-
-    gray = (128, 128, 128)
-    dark_gray = (64, 64, 64)
-    light_gray = (192, 192, 192)
-    light_blue = (102, 178, 255)
-    dark_blue = (0, 0, 192)
-background_color = Colors.black
-font_color = Colors.green
-
-objects_to_delete = set()
-
-
-camera = Camera()
-camera.x = 0
-camera.y = 0
-target_scale = 105
-
-
-drawable_count = 0
-frames = 0
-
-
-ejected_to_calculate = set()
-
-
-
-font = 'arial'
-font_width = int(width/100+1)
-dialogue_font = pygame.font.SysFont(font, font_width)
-objects = []
-
-pygame.display.set_caption("Agar.io Clone")
-
-smoothness = 15
-
-
-
-def calc_center_of_mass(bodies):
-        try:
-            center_x = 0
-            center_y = 0
-            weight = 0
-            for body_ in bodies:
-                center_x += body_.x*body_.mass
-                center_y += body_.y*body_.mass
-                weight += body_.mass
-            return (center_x/weight, center_y/weight)
-        except:
-            print("divide by 0")
-            return (10, 10)
-        
-
-
-
 class Drawable:
     def __init__(self, x, y, mass, color):
         global drawable_count
@@ -278,12 +181,6 @@ class Drawable:
         self.mass += other.mass
         objects_to_delete.add(other.id)
         
-def new_cell(player, color):
-    new_cell = Cell(random.randint(-border_width, border_width), random.randint(-border_height, border_height), player_start_mass, color, player)
-    cells.append(new_cell)
-    return new_cell
-    
-
 class Player:
     def __init__(self, mode, color):
         self.mode = mode
@@ -326,10 +223,6 @@ class Player:
 
         return target
 
-
-        
-
-   
 class Cell(Drawable):
    
     def __init__(self, x, y, mass, color, player):
@@ -573,9 +466,6 @@ class Cell(Drawable):
                                                 self.consume(thing)
                                         elif thing.mass >= self.mass*1.3 and distance < thing.radius-self.radius/3:
                                                 thing.consume(self)
-                           
-                   
-               
 
 class Agar(Drawable):
 
@@ -613,11 +503,6 @@ class Agar(Drawable):
             if self.id not in objects_to_delete:
                 if thing.can_consume(self):
                     thing.consume(self)
-
-def mouse_in_game_pos():
-    x,y = pygame.mouse.get_pos()
-    return((x+camera.x)*camera.scale, (y+camera.y)*camera.scale)
-
 
 class Ejected(Drawable):
 
@@ -708,8 +593,6 @@ class Ejected(Drawable):
                 if (self.x-virus.x)**2+(self.y-virus.y)**2 < (virus.radius)**2:
                     virus.consume(self)
 
-
-
 class Virus(Drawable):
 
     def __init__(self, x, y, mass, color):
@@ -723,7 +606,6 @@ class Virus(Drawable):
             if self.id not in objects_to_delete:
                 if thing.mass >= virus_mass*1.3 and abs(self.x-thing.x)**2+abs(self.y-thing.y)**2 < (self.radius/4+thing.radius)**2:
                     thing.consume_virus(self)
-
 
 class BrownVirus(Drawable):
     def __init__(self, x, y, mass, color):
@@ -775,6 +657,28 @@ class BrownVirus(Drawable):
     #     objects_to_delete.add(cell.id)
        
 
+def mouse_in_game_pos():
+    x,y = pygame.mouse.get_pos()
+    return((x+camera.x)*camera.scale, (y+camera.y)*camera.scale)
+
+def new_cell(player, color):
+    new_cell = Cell(random.randint(-border_width, border_width), random.randint(-border_height, border_height), player_start_mass, color, player)
+    cells.append(new_cell)
+    return new_cell
+
+def calc_center_of_mass(bodies):
+        try:
+            center_x = 0
+            center_y = 0
+            weight = 0
+            for body_ in bodies:
+                center_x += body_.x*body_.mass
+                center_y += body_.y*body_.mass
+                weight += body_.mass
+            return (center_x/weight, center_y/weight)
+        except:
+            print("divide by 0")
+            return (10, 10)
 
 def game_tick():
     global cell_time
@@ -853,43 +757,6 @@ def game_tick():
     for obj in all_objs:
         obj.draw()
 
-
-
-
-
-smooth_fix_limit = 3
-
-window = pygame.display.set_mode([width, height])
-clock = pygame.time.Clock()
-
-cells = []
-
-ejected = []
-
-viruses = []
-brown_viruses = []
-#players = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],]
-#players = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []]
-#players = [[], [], []]
-players = []
-player = Player("player", Colors.blue)
-players.append(player)
-for i in range(bot_count):
-    players.append(Player("bot", Colors.red))
-for i in range(minion_count):
-    players.append(Player("minion", Colors.green))
-player_names = ["Player", "Bot 1", "Bot 2", "Bot 3", "Bot 4", "Bot 5", "Bot 6", "Bot 7", "Bot 8", "Bot 9", "Bot 10"]
-#player_cell = cells.append(Cell(0, 0, player_start_mass, light_blue, player.cells[0]))
-
-#cells.append(cell(1000, 1000, 100, red, 1))
-#cells.append(cell(-1000, -1000, 100, blue, 2))
-fps_ = 60
-
-# for player in player.cells:
-#         player.cells = [cell for cell in cells if cell.player == player]
-
-
-
 def near_cells(thing):
     for cell in cells:
         if abs(cell.x-thing.x) < cell.radius+20:
@@ -926,29 +793,125 @@ def all_consumable():
     for cell in cells:
          yield cell
     
-    
-    
-    
-    
-    
+def distance_squared(self, other):
+    return (self.x-other.x)**2+(self.y-other.y)**2
 
-agars = set()
+def get_nearest_agar(player):
+    mindist = 2147483646
+    minagar = Agar(0, 0, 1, Colors.green)
+    for cell in player.cells:
+        for agar in agars:
+            if distance_squared(cell, agar) < mindist:
+                mindist = distance_squared(cell, agar)
+                minagar = agar
+    return minagar
 
-#agars_to_draw = set()
+
+pygame.init()
+
+config = ConfigParser()
+
+# parse existing file
+config.read('agar.ini')
+
+# read values from a section
+fps = config.getint('settings', 'fps')
+speed = config.getfloat('settings', 'speed')
+
+gamemode = config.getint('settings', 'gamemode')
+border_width = config.getint('settings', 'border_width')
+border_height = config.getint('settings', 'border_height')
+
+virus_count = config.getint('settings', 'virus_count')
+virus_mass = config.getint('settings', 'virus_mass')
+
+brown_virus_count = config.getint('settings', 'brown_virus_count')
+brown_virus_mass = config.getint('settings', 'brown_virus_mass')
 
 
-
-
-
-
-#border_width = 400
-#border_height = 400
+player_start_mass = config.getint('settings', 'player_start_mass')
+player_speed = config.getfloat('settings', 'player_speed')
+player_min_mass = config.getint('settings', 'player_min_mass')
+player_max_cells = config.getint('settings', 'player_max_cells')
+player_max_cell_mass = config.getint('settings', 'player_max_cell_mass')
+player_decay_rate = config.getfloat('settings', 'player_decay_rate')
+player_recombine_time = config.getfloat('settings', 'player_recombine_time')
+player_eject_min_mass = config.getint('settings', 'player_eject_min_mass')
+player_split_min_mass = config.getint('settings', 'player_split_min_mass')
 
 agar_min_mass = 1
 agar_max_mass = 4
-
 max_agar_count = 3000
 
+ejected_size = config.getint('settings', 'ejected_size')
+ejected_loss = config.getint('settings', 'ejected_loss')
+ejected_speed = config.getint('settings', 'ejected_speed')
+
+bot_count = config.getint('settings', 'bot_count')
+bot_start_mass = config.getint('settings', 'bot_start_mass')
+
+minion_count = config.getint('settings', 'minion_count')
+minion_start_mass = config.getint('settings', 'minion_start_mass')
+
+
+
+width, height = 1280, 720
+
+virus_image = pygame.image.load("resources/images/virus.png")
+
+aa_agar = True
+
+background_color = Colors.black
+font_color = Colors.green
+
+objects_to_delete = set()
+
+
+camera = Camera()
+camera.x = 0
+camera.y = 0
+target_scale = 105
+
+
+drawable_count = 0
+frames = 0
+
+
+ejected_to_calculate = set()
+
+
+
+font = 'arial'
+font_width = int(width/100+1)
+dialogue_font = pygame.font.SysFont(font, font_width)
+objects = []
+
+pygame.display.set_caption("Agar.io Clone")
+
+smoothness = 15
+
+
+smooth_fix_limit = 3
+
+window = pygame.display.set_mode([width, height])
+clock = pygame.time.Clock()
+
+agars = set()
+cells = []
+ejected = []
+viruses = []
+brown_viruses = []
+players = []
+player = Player("player", Colors.blue)
+players.append(player)
+for i in range(bot_count):
+    players.append(Player("bot", Colors.red))
+for i in range(minion_count):
+    players.append(Player("minion", Colors.green))
+
+player_names = ["Player", "Bot 1", "Bot 2", "Bot 3", "Bot 4", "Bot 5", "Bot 6", "Bot 7", "Bot 8", "Bot 9", "Bot 10"]
+
+fps_ = fps
 
 last_time = time.time()
 
@@ -972,33 +935,15 @@ computational_time = 0
 total_time = time.time()
 tick_time = 0
 playing = True
-
-def distance_squared(self, other):
-    return (self.x-other.x)**2+(self.y-other.y)**2
-
-def get_nearest_agar(player):
-    mindist = 2147483646
-    minagar = Agar(0, 0, 1, Colors.green)
-    for cell in player.cells:
-        for agar in agars:
-            if distance_squared(cell, agar) < mindist:
-                mindist = distance_squared(cell, agar)
-                minagar = agar
-    return minagar
-     
 aa_text = True
+
 while playing:
     start = time.time()
    
     #cProfile.run('re.compile("game_tick()")')
 
     cells.sort(key=lambda x: x.mass, reverse=False)
-    # if frames % 15 == 1:
-    #     agars_to_draw = [agar for agar in agars if near_cells(agar)]
-    # if len(player.cells) == 0:
-    #     new_cell = Cell(random.randint(-border_width, border_width), random.randint(-border_height, border_height), player_start_mass, light_blue, player)
-    #     cells.append(new_cell)
-    #     player.cells.append(new_cell)
+    
     for p in players:
         if len(p.cells) == 0:
             if p.mode == "player":
@@ -1030,7 +975,7 @@ while playing:
         brown_viruses.append(BrownVirus(random.randint(-border_width, border_width), random.randint(-border_height, border_height), brown_virus_mass, Colors.brown))
    
     if len(agars) < max_agar_count:
-        if frames%int(len(agars)/15000*fps+1) == 0:
+        if frames%int(len(agars)/25000*fps+1) == 0:
             rand_color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
             agars.add(Agar(random.randint(-border_width, border_width), random.randint(-border_height, border_height), random.randint(agar_min_mass, agar_max_mass), rand_color))
 
