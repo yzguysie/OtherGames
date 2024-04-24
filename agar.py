@@ -351,7 +351,7 @@ class Cell(Drawable):
 
         # Draw cell mass
         dialogue = dialogue_font.render(str(int(self.mass)), aa_text, Colors.white)
-        dialogue_rect = dialogue.get_rect(center = (round(self.x/camera.scale-camera.x+.5), round(self.y/camera.scale-camera.y+player_font_width)))
+        dialogue_rect = dialogue.get_rect(center = (round(self.x/camera.scale-camera.x), round(self.y/camera.scale-camera.y+player_font_width)))
         window.blit(dialogue, dialogue_rect)
 
 
@@ -454,10 +454,10 @@ class Cell(Drawable):
         objects_to_delete.add(virus.id)
         while len(self.player.cells) < player_max_cells and self.mass > player_split_min_mass:
                 self.split()
-                self.player.cells.append(cells[len(cells)-1])
-                self.player.cells[len(self.player.cells)-1].time_created = time.time()-.5
-                self.player.cells[len(self.player.cells)-1].extraxspeed = 0
-                self.player.cells[len(self.player.cells)-1].extrayspeed = 0
+                # self.player.cells.append(cells[len(cells)-1])
+                # self.player.cells[len(self.player.cells)-1].time_created = time.time()-.5
+                # self.player.cells[len(self.player.cells)-1].extraxspeed = 0
+                # self.player.cells[len(self.player.cells)-1].extrayspeed = 0
 
 
     def consume_brown_virus(self, virus):
@@ -465,10 +465,10 @@ class Cell(Drawable):
         objects_to_delete.add(virus.id)
         while len(self.player.cells) < player_max_cells and self.mass > player_split_min_mass:
                 self.split()
-                self.player.cells.append(cells[len(cells)-1])
-                self.player.cells[len(self.player.cells)-1].time_created = time.time()-.5
-                self.player.cells[len(self.player.cells)-1].extraxspeed = 0
-                self.player.cells[len(self.player.cells)-1].extrayspeed = 0    
+                # self.player.cells.append(cells[len(cells)-1])
+                # self.player.cells[len(self.player.cells)-1].time_created = time.time()-.5
+                # self.player.cells[len(self.player.cells)-1].extraxspeed = 0
+                # self.player.cells[len(self.player.cells)-1].extrayspeed = 0    
                
    
 
@@ -500,23 +500,43 @@ class Cell(Drawable):
                 sq_distance = ((thing.x-self.x)**2+(thing.y-self.y)**2)
                 if sq_distance < (thing.radius+self.radius)**2:
                     if (time.time()-thing.time_created < player_recombine_time*(self.mass**(1/4)/4) or time.time()-self.time_created < player_recombine_time*(self.mass**(1/4)/4)) and thing.player == self.player:
-                        if time.time()-thing.time_created > .5 and time.time()-self.time_created > .5:
-                            count = 0
-                            combined_radius_squared = (thing.radius+self.radius)**2
-                            while (thing.x-self.x)**2+(thing.y-self.y)**2 < combined_radius_squared and count < 10:
-                                xdiff = thing.x-self.x
-                                ydiff = thing.y-self.y
+                        if time.time()-thing.time_created > .2 and time.time()-self.time_created > .2:
+                            for i in range(10):
+                                if self.touching(thing):
+                                    try:
+                                        combined_mass = self.mass+thing.mass
+                                        xdiff = self.x-thing.x
+                                        ydiff = self.y-thing.y
+                                        distance_squared = xdiff**2+ydiff**2
+                                        xforce = xdiff/distance_squared*250
+                                        yforce = ydiff/distance_squared*250
+                                        self.x += xforce/fps
+                                        self.y += yforce/fps
+                                        thing.x -= xforce/fps
+                                        thing.y -= yforce/fps
+                                    except:
+                                        print(Exception)
+                            
+                            
+                            
+                            
+                            
+                            # count = 0
+                            # combined_radius_squared = (thing.radius+self.radius)**2
+                            # while (thing.x-self.x)**2+(thing.y-self.y)**2 < combined_radius_squared and count < 10:
+                            #     xdiff = thing.x-self.x
+                            #     ydiff = thing.y-self.y
 
-                                combined_mass = self.mass+thing.mass
-                                xpush = (xdiff)/(thing.radius+self.radius)/5
-                                ypush = (ydiff)/(thing.radius+self.radius)/5
-                                thing.x += xpush*(self.mass/combined_mass)
-                                thing.y += ypush*(self.mass/combined_mass)
-                                self.x -= xpush*(thing.mass/combined_mass)
-                                self.y -= ypush*(thing.mass/combined_mass)
-                                count += 1
-                            if count >= 10:
-                                pass
+                            #     combined_mass = self.mass+thing.mass
+                            #     xpush = (xdiff)/(thing.radius+self.radius)/5
+                            #     ypush = (ydiff)/(thing.radius+self.radius)/5
+                            #     thing.x += xpush*(self.mass/combined_mass)
+                            #     thing.y += ypush*(self.mass/combined_mass)
+                            #     self.x -= xpush*(thing.mass/combined_mass)
+                            #     self.y -= ypush*(thing.mass/combined_mass)
+                            #     count += 1
+                            # if count >= 10:
+                            #     pass
                     else:
                         if (thing.x-self.x)**2+(thing.y-self.y)**2 < (self.radius-thing.radius/3)**2:
                             if self.id not in objects_to_delete and thing.id not in objects_to_delete:
@@ -562,6 +582,19 @@ class Agar(Drawable):
             self.xspeed = 0
         if abs(self.yspeed) < .01:
             self.yspeed = 0
+
+        if self.x > border_width:
+            self.x = border_width
+            self.xspeed *= -.5
+        if self.x < -border_width:
+            self.x = -border_width
+            self.xspeed *= -.5
+        if self.y > border_height:
+            self.y = border_height
+            self.yspeed *= -.5
+        if self.y < -border_height:
+            self.y = -border_height
+            self.yspeed *= -.5
 
 
     def check_colliding(self, cells):
@@ -629,14 +662,14 @@ class Ejected(Drawable):
         self.check_colliding(cells)
         self.check_brown(brown_viruses)
         for other in ejected:
-            if other != self:
+            if other.id != self.id:
                 if self.touching(other):
                     try:
                         xdiff = self.x-other.x
                         ydiff = self.y-other.y
                         distance_squared = xdiff**2+ydiff**2
-                        xforce = xdiff/distance_squared*100
-                        yforce = ydiff/distance_squared*100
+                        xforce = xdiff/distance_squared*50
+                        yforce = ydiff/distance_squared*50
                         self.x += xforce/fps
                         self.y += yforce/fps
                         other.x -= xforce/fps
@@ -702,7 +735,7 @@ class BrownVirus(Drawable):
 
     def spit(self):
         spit_mult = 1
-        spit_mass = 1
+        spit_mass = random.uniform(1, 3)
         spit_speed = random.uniform(.4, .5)
         rand_color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
         angle = random.uniform(0, 360)
@@ -978,7 +1011,10 @@ while playing:
     #     player.cells = [cell for cell in cells if cell.player == player]
 
     if len(viruses) < virus_count:
-        viruses.append(Virus(random.randint(-border_width, border_width), random.randint(-border_height, border_height), virus_mass, Colors.green))
+        new_virus = Virus(random.randint(-border_width, border_width), random.randint(-border_height, border_height), virus_mass, Colors.green)
+        while len([c for c in cells if new_virus.touching(c)]) != 0:
+            new_virus = Virus(random.randint(-border_width, border_width), random.randint(-border_height, border_height), virus_mass, Colors.green)
+        viruses.append(new_virus)
 
     if len(brown_viruses) < brown_virus_count:
         brown_viruses.append(BrownVirus(random.randint(-border_width, border_width), random.randint(-border_height, border_height), brown_virus_mass, Colors.brown))
