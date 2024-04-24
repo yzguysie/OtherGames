@@ -11,6 +11,18 @@ optimize game
 make it so when one cell increases mass, camera moves smoothly
 idk
 """
+class Sprite():
+    def __init__(self, image, x, y, rotation):
+        self.x = x
+        self.y = y
+        self.ogimage = image
+        self.image = self.ogimage
+        self.rotation = rotation
+
+    def draw(self):
+        self.image = pygame.transform.rotate(self.ogimage, self.rotation)
+        window.blit(self.image, camera.get_screen_pos(self.x, self.y))
+
 class Camera:
     def __init__(self):
         self.pos_smoothness = 0
@@ -116,7 +128,7 @@ minion_start_mass = config.getint('settings', 'minion_start_mass')
 
 width, height = 1280, 720
 
-
+virus_image = pygame.image.load("resources/images/virus.png")
 
 aa_agar = True
 class Colors:
@@ -514,8 +526,7 @@ class Cell(Drawable):
                                         self.y += yforce/fps
                                         thing.x -= xforce/fps
                                         thing.y -= yforce/fps
-                                    except:
-                                        print(Exception)
+                                    except Exception as e: print(e + " At cell collision")
                             
                             
                             
@@ -621,7 +632,7 @@ class Ejected(Drawable):
         x, y = cell.target
         xdiff = x-cell.x
         ydiff = y-cell.y
-        angle = math.atan2(ydiff, xdiff)
+        angle = math.atan2(ydiff, xdiff)+random.uniform(-.1, .1)
         vector = pygame.math.Vector2(math.cos(angle), math.sin(angle))
         self.x = self.x+(cell.radius)*vector[0]
         self.y = self.y+(cell.radius)*vector[1]
@@ -674,8 +685,7 @@ class Ejected(Drawable):
                         self.y += yforce/fps
                         other.x -= xforce/fps
                         other.y -= yforce/fps
-                    except:
-                        print(Exception)
+                    except Exception as e: print(e + " At ejected collision")
         
         # Consume other ejected
 
