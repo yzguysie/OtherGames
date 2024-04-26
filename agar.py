@@ -4,7 +4,8 @@ import math
 import random
 import time
 from configparser import ConfigParser
-
+import cProfile
+import re
 
 """
 Todo:
@@ -113,7 +114,6 @@ class Camera:
 class Drawable:
     def __init__(self, x, y, mass, color):
         global drawable_count
-        global objects
 
         self.x = x
         self.y = y
@@ -131,28 +131,31 @@ class Drawable:
         self.consumable = True
 
 
-    def draw(self):
-        
-        if round(self.x/camera.scale-camera.x) > - round(abs(self.smoothradius/camera.scale)) and round(self.x/camera.scale-camera.x) < width+round(abs(self.smoothradius/camera.scale)):
-            if round(self.y/camera.scale-camera.y) > - round(abs(self.smoothradius/camera.scale)) and round(self.y/camera.scale-camera.y) < height+round(abs(self.smoothradius/camera.scale)):
+    def draw(self, aa=True, outline=True):
              
-                self.radius = self.mass**(1/2)
-                self.outline_thickness = round(math.sqrt(self.smoothradius/camera.scale)/2)
-                self.smoothradius += (self.radius - self.smoothradius)/smoothness
+        self.radius = math.sqrt(self.mass)
+        self.outline_thickness = round(math.sqrt(self.smoothradius/camera.scale)/2)
+        self.smoothradius += (self.radius - self.smoothradius)/smoothness
 
-                #Draw Outline
-                if self.outline_thickness > 0:
-                    
-                    pygame.gfxdraw.aacircle(window, round(self.x/camera.scale-camera.x), round(self.y/camera.scale-camera.y), round(abs(self.smoothradius/camera.scale)), self.outline_color)
-                    pygame.gfxdraw.filled_circle(window, round(self.x/camera.scale-camera.x), round(self.y/camera.scale-camera.y), round(abs(self.smoothradius/camera.scale)), self.outline_color)
-                
-                #Draw Inside
-                pygame.gfxdraw.aacircle(window, round(self.x/camera.scale-camera.x), round(self.y/camera.scale-camera.y), round(abs(self.smoothradius/camera.scale-self.outline_thickness)), self.color)
-                pygame.gfxdraw.filled_circle(window, round(self.x/camera.scale-camera.x), round(self.y/camera.scale-camera.y), round(abs(self.smoothradius/camera.scale-self.outline_thickness)), self.color)
+        #Draw Outline
+        if self.outline_thickness > 0 and outline:
+            if aa:
+                pygame.gfxdraw.aacircle(window, round(self.x/camera.scale-camera.x), round(self.y/camera.scale-camera.y), round(abs(self.smoothradius/camera.scale)), self.outline_color)
+            pygame.gfxdraw.filled_circle(window, round(self.x/camera.scale-camera.x), round(self.y/camera.scale-camera.y), round(abs(self.smoothradius/camera.scale)), self.outline_color)
+        
+        #Draw Inside
+        if aa:
+            pygame.gfxdraw.aacircle(window, round(self.x/camera.scale-camera.x), round(self.y/camera.scale-camera.y), round(abs(self.smoothradius/camera.scale-self.outline_thickness)), self.color)
+        pygame.gfxdraw.filled_circle(window, round(self.x/camera.scale-camera.x), round(self.y/camera.scale-camera.y), round(abs(self.smoothradius/camera.scale-self.outline_thickness)), self.color)
 
 
     def tick(self):
         self.check_consume()
+
+    def distance_to(self, other, squared = False):
+        if squared:
+            return (self.x-other.x)**2+(self.y-other.y)**2
+        return math.sqrt((self.x-other.x)**2+(self.y-other.y)**2)
 
     def touching(self, other):
         return math.pow((self.x-other.x), 2) + math.pow((self.y-other.y), 2) < math.pow((self.radius+other.radius), 2) 
@@ -161,13 +164,10 @@ class Drawable:
         return (self.x-other.x)**2 + (self.y-other.y)**2 < (self.radius-other.radius/3)**2
     
     def can_consume(self, other):
-        if other.consumable and other != self:
+        if other.consumable and other.id != self.id:
             if self.id not in objects_to_delete and other.id not in objects_to_delete:
                 return self.mass > other.mass*1.3 and self.overlapping(other)
         return False
-
-
-
 
     def check_consume(self):
         global objects
@@ -187,7 +187,8 @@ class Player:
         self.color = color
         
         self.target = (0, 0)
-        self.cells = [new_cell(self, self.color)]
+        #self.cells = [new_cell(self, self.color)]
+        self.cells = []
     
     def tick(self):
 
@@ -215,13 +216,25 @@ class Player:
             
         
         elif self.mode == "bot":
-            nearest_agar = get_nearest_agar(self)
+            nearest_agar = self.get_nearest_agar()
             target = nearest_agar.x, nearest_agar.y
+
 
         else:
             target = (0, 0)
 
         return target
+    
+    def get_nearest_agar(self):
+        center = calc_center_of_mass(self.cells)
+        mindist = 2147483646
+        minagar = Agar(0, 0, 1, Colors.green)
+        for agar in agars:
+            dist_sq = (center[0]-agar.x)**2+(center[1]-agar.y)**2
+            if dist_sq < mindist:
+                mindist = dist_sq
+                minagar = agar
+        return minagar
 
 class Cell(Drawable):
    
@@ -289,8 +302,8 @@ class Cell(Drawable):
             self.yspeed = velocity*vector[1]*self.speed/fps_
 
 
-        self.x += (self.xspeed+self.extraxspeed)/self.radius**(1/2)
-        self.y += (self.yspeed+self.extrayspeed)/self.radius**(1/2)
+        self.x += (self.xspeed+self.extraxspeed)/math.sqrt(self.radius)
+        self.y += (self.yspeed+self.extrayspeed)/math.sqrt(self.radius)
 
         if self.x > border_width:
             self.x = border_width
@@ -323,7 +336,7 @@ class Cell(Drawable):
 
        
        
-        total_speed = (abs(extrax)**2+abs(extray)**2)**(1/2)
+        total_speed = math.sqrt(extrax**2+extray**2)
        
         if extrax**2+extray**2 > player_speed**2*2:
                 percent_x = extrax/total_speed
@@ -354,26 +367,19 @@ class Cell(Drawable):
         self.check_viruses(brown_viruses)
 
 
+
     def consume_virus(self, virus):
         self.mass += virus.mass
         objects_to_delete.add(virus.id)
         while len(self.player.cells) < player_max_cells and self.mass > player_split_min_mass:
                 self.split()
-                # self.player.cells.append(cells[len(cells)-1])
-                # self.player.cells[len(self.player.cells)-1].time_created = time.time()-.5
-                # self.player.cells[len(self.player.cells)-1].extraxspeed = 0
-                # self.player.cells[len(self.player.cells)-1].extrayspeed = 0
 
 
     def consume_brown_virus(self, virus):
         self.mass += virus.mass
         objects_to_delete.add(virus.id)
         while len(self.player.cells) < player_max_cells and self.mass > player_split_min_mass:
-                self.split()
-                # self.player.cells.append(cells[len(cells)-1])
-                # self.player.cells[len(self.player.cells)-1].time_created = time.time()-.5
-                # self.player.cells[len(self.player.cells)-1].extraxspeed = 0
-                # self.player.cells[len(self.player.cells)-1].extrayspeed = 0    
+                self.split()  
                
    
 
@@ -386,14 +392,14 @@ class Cell(Drawable):
             if self.mass > virus.mass*1.3:
                 if (virus.x-self.x)**2+(virus.y-self.y)**2 < (self.radius-virus.radius/3)**2:
                     if self.id not in objects_to_delete and virus.id not in objects_to_delete:
-                        self.consume_brown_virus(virus)
+                        self.consume_virus(virus)
 
        
     def eject_mass(self):
         e = Ejected(self)
         self.mass -= ejected_loss
         self.radius = math.sqrt(self.mass)
-        ejected.add(e)
+        ejected.append(e)
 
     def check_colliding(self, cells):
         global player_recombine_time
@@ -404,12 +410,12 @@ class Cell(Drawable):
             if thing.id != self.id:
                 sq_distance = ((thing.x-self.x)**2+(thing.y-self.y)**2)
                 if sq_distance < (thing.radius+self.radius)**2:
+                    # If cells are too young, repel each other
                     if (time.time()-thing.time_created < player_recombine_time*(self.mass**(1/4)/4) or time.time()-self.time_created < player_recombine_time*(self.mass**(1/4)/4)) and thing.player == self.player:
                         if time.time()-thing.time_created > .2 and time.time()-self.time_created > .2:
                             for i in range(10):
                                 if self.touching(thing):
                                     try:
-                                        combined_mass = self.mass+thing.mass
                                         xdiff = self.x-thing.x
                                         ydiff = self.y-thing.y
                                         distance_squared = xdiff**2+ydiff**2
@@ -419,66 +425,40 @@ class Cell(Drawable):
                                         self.y += yforce/fps
                                         thing.x -= xforce/fps
                                         thing.y -= yforce/fps
-                                    except Exception as e: print(e + " At cell collision")
-                            
-                            
-                            
-                            
-                            
-                            # count = 0
-                            # combined_radius_squared = (thing.radius+self.radius)**2
-                            # while (thing.x-self.x)**2+(thing.y-self.y)**2 < combined_radius_squared and count < 10:
-                            #     xdiff = thing.x-self.x
-                            #     ydiff = thing.y-self.y
+                                    except Exception as e: print(str(e) + " At cell collision")
 
-                            #     combined_mass = self.mass+thing.mass
-                            #     xpush = (xdiff)/(thing.radius+self.radius)/5
-                            #     ypush = (ydiff)/(thing.radius+self.radius)/5
-                            #     thing.x += xpush*(self.mass/combined_mass)
-                            #     thing.y += ypush*(self.mass/combined_mass)
-                            #     self.x -= xpush*(thing.mass/combined_mass)
-                            #     self.y -= ypush*(thing.mass/combined_mass)
-                            #     count += 1
-                            # if count >= 10:
-                            #     pass
+                    # If cells are old enough, recombine
                     else:
-                        if (thing.x-self.x)**2+(thing.y-self.y)**2 < (self.radius-thing.radius/3)**2:
+                        if sq_distance < (self.radius-thing.radius/3)**2:
                             if self.id not in objects_to_delete and thing.id not in objects_to_delete:
-                                if self.player == thing.player:
-                                        self.consume(thing)
-                                else:
-                                        if self.mass >= thing.mass*1.3 and sq_distance < (self.radius-thing.radius/4)**2:
-                                                self.consume(thing)
-                                        elif thing.mass >= self.mass*1.3 and sq_distance < (thing.radius-self.radius/4)**2:
-                                                thing.consume(self)
+                                self.consume(thing)
 
         for thing in cells:
-           
             if thing.player != self.player:
-                distance = ((thing.x-self.x)**2+(thing.y-self.y)**2)**(1/2)
-                if distance < (thing.radius+self.radius):
-                            if self.id not in objects_to_delete and thing.id not in objects_to_delete:
-                                if self.player == thing.player:
-                                   
-                                        self.consume(thing)
-                                else:
-                                        if self.mass >= thing.mass*1.3 and distance < self.radius-thing.radius/3:
-                                                self.consume(thing)
-                                        elif thing.mass >= self.mass*1.3 and distance < thing.radius-self.radius/3:
-                                                thing.consume(self)
+                sq_distance = (thing.x-self.x)**2+(thing.y-self.y)**2
+                if sq_distance < (thing.radius+self.radius)**2:
+                    if self.id not in objects_to_delete and thing.id not in objects_to_delete:
+                        if self.mass >= thing.mass*1.3 and sq_distance < (self.radius-thing.radius/3)**2:
+                                self.consume(thing)
+                        elif thing.mass >= self.mass*1.3 and sq_distance < (thing.radius-self.radius/3)**2:
+                                thing.consume(self)
 
 class Agar(Drawable):
 
     def __init__(self, x, y, mass, color):
         super().__init__(x, y, mass, color)
 
+    def draw(self):
+        super().draw(False, False)
+
+
     def tick(self):
         global cells
         self.check_colliding(cells)
         self.x += self.xspeed
         self.y += self.yspeed
-        self.xspeed /= 1+(9/fps)
-        self.yspeed /= 1+(9/fps)
+        self.xspeed /= 1+(12/fps)
+        self.yspeed /= 1+(12/fps)
         if abs(self.xspeed) < .01:
             self.xspeed = 0
         if abs(self.yspeed) < .01:
@@ -496,13 +476,19 @@ class Agar(Drawable):
         if self.y < -border_height:
             self.y = -border_height
             self.yspeed *= -.5
+        
+        if agar_grow:
+            if self.mass < agar_max_mass and random.randint(0, round(fps/agar_grow_speed)) == 1:
+                self.grow()
+
+    def grow(self):
+        self.mass += 1
 
 
     def check_colliding(self, cells):
         for thing in cells:
-            if self.id not in objects_to_delete:
-                if thing.can_consume(self):
-                    thing.consume(self)
+            if thing.can_consume(self):
+                thing.consume(self)
 
 class Ejected(Drawable):
 
@@ -527,7 +513,7 @@ class Ejected(Drawable):
 
     def tick(self):
         global ejected_to_calculate
-        self.radius = self.mass**(1/2)
+        self.radius = math.sqrt(self.mass)
         self.smoothradius += (self.radius - self.smoothradius)/smoothness
         global ejected_size
         self.x += self.xspeed/fps
@@ -557,6 +543,8 @@ class Ejected(Drawable):
 
         self.check_colliding(cells)
         self.check_brown(brown_viruses)
+
+        # Repel other Ejected
         for other in ejected:
             if other.id != self.id:
                 if self.touching(other):
@@ -616,10 +604,17 @@ class BrownVirus(Drawable):
         self.smoothradius = self.radius
 
     def tick(self):
-        if self.mass > self.startmass:
-            self.spit()
+        spit_rate = 120
+        if fps < spit_rate:
+            for i in range(round(spit_rate/fps)):
+                if self.mass > self.startmass:
+                    self.spit()
+        else:
+            if (frames%(round(fps/spit_rate)) == 0):
+                if self.mass > self.startmass:
+                    self.spit()
         
-        elif random.randint(0, fps) == 0:
+        if random.randint(0, fps) == 0 and len(agars) < max_agars:
             self.spit() 
 
         self.check_consume()
@@ -627,18 +622,18 @@ class BrownVirus(Drawable):
 
     def spit(self):
         spit_mult = 1
-        spit_mass = random.uniform(1, 3)
-        spit_speed = random.uniform(.4, .5)
+        spit_mass = 1
+        spit_speed = random.uniform(.8, 1)
         rand_color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
         angle = random.uniform(0, 360)
         vector = pygame.math.Vector2(math.cos(angle), math.sin(angle))
-        spatted_x = self.x+(self.radius)*vector[0]
-        spatted_y = self.y+(self.radius)*vector[1]
+        spatted_x = self.x+(self.radius-math.sqrt(spit_mass))*vector[0]
+        spatted_y = self.y+(self.radius-math.sqrt(spit_mass))*vector[1]
         spatted = Agar(spatted_x, spatted_y, spit_mass, rand_color)
         spatted.xspeed = vector[0]*spit_speed
         spatted.yspeed = vector[1]*spit_speed
         agars.add(spatted)
-        self.mass -= spit_mass/spit_mult
+        self.mass -= spatted.mass/spit_mult
         self.mass = max(self.mass, self.startmass)
        
 
@@ -681,6 +676,7 @@ def calc_center_of_mass(bodies):
             return (10, 10)
 
 def game_tick():
+    global draw_time
     global cell_time
     global agar_time
     global virus_time
@@ -745,17 +741,25 @@ def game_tick():
 
     # for thing in brown_viruses:
     #     thing.tick()
-
-    #virus_time += time.time()-timer_start
+    
     all_objs = list(all_drawable())
     all_objs.sort(key=lambda x: x.radius)
     for thing in all_objs:
         if type(thing) != Cell:
             thing.tick()
+
+    timer_start = time.time()
+
     for player_ in players:
         player_.tick()
+
+    cell_time += time.time()-timer_start
+
+    timer_start = time.time()
+
     for obj in all_objs:
         obj.draw()
+    draw_time += time.time()-timer_start
 
 def near_cells(thing):
     for cell in cells:
@@ -792,19 +796,8 @@ def all_consumable():
          yield brown_virus
     for cell in cells:
          yield cell
-    
-def distance_squared(self, other):
-    return (self.x-other.x)**2+(self.y-other.y)**2
 
-def get_nearest_agar(player):
-    mindist = 2147483646
-    minagar = Agar(0, 0, 1, Colors.green)
-    for cell in player.cells:
-        for agar in agars:
-            if distance_squared(cell, agar) < mindist:
-                mindist = distance_squared(cell, agar)
-                minagar = agar
-    return minagar
+
 
 
 pygame.init()
@@ -821,6 +814,15 @@ speed = config.getfloat('settings', 'speed')
 gamemode = config.getint('settings', 'gamemode')
 border_width = config.getint('settings', 'border_width')
 border_height = config.getint('settings', 'border_height')
+
+
+max_agars = config.getint('settings', 'max_agars')
+agar_min_mass = config.getint('settings', 'agar_min_mass')
+agar_max_mass = config.getint('settings', 'agar_max_mass')
+agar_grow = config.getboolean('settings', 'agar_grow')
+agar_grow_speed = config.getfloat('settings', 'agar_grow_speed')
+
+
 
 virus_count = config.getint('settings', 'virus_count')
 virus_mass = config.getint('settings', 'virus_mass')
@@ -841,7 +843,7 @@ player_split_min_mass = config.getint('settings', 'player_split_min_mass')
 
 agar_min_mass = 1
 agar_max_mass = 4
-max_agar_count = 3000
+max_agars = 3000
 
 ejected_size = config.getint('settings', 'ejected_size')
 ejected_loss = config.getint('settings', 'ejected_loss')
@@ -891,7 +893,7 @@ pygame.display.set_caption("Agar.io Clone")
 smoothness = 15
 
 
-smooth_fix_limit = 3
+smooth_fix_limit = 4
 
 window = pygame.display.set_mode([width, height])
 clock = pygame.time.Clock()
@@ -915,9 +917,9 @@ fps_ = fps
 
 last_time = time.time()
 
-for i in range(int(max_agar_count/2)):
+for i in range(int(max_agars/2)):
     rand_color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-    agars.add(Agar(random.randint(-border_width, border_width), random.randint(-border_height, border_height), random.randint(agar_min_mass, agar_max_mass), rand_color))
+    agars.add(Agar(random.randint(-border_width, border_width), random.randint(-border_height, border_height), agar_min_mass, rand_color))
 
 for i in range(int(virus_count)):
     viruses.append(Virus(random.randint(-border_width, border_width), random.randint(-border_height, border_height), virus_mass, Colors.green))
@@ -926,7 +928,7 @@ for i in range(int(brown_virus_count)):
     brown_viruses.append(BrownVirus(random.randint(-border_width, border_width), random.randint(-border_height, border_height), brown_virus_mass, Colors.brown))
 
 
-
+draw_time = 0
 cell_time = 0
 agar_time = 0
 virus_time = 0
@@ -939,11 +941,13 @@ aa_text = True
 
 while playing:
     start = time.time()
-   
-    #cProfile.run('re.compile("game_tick()")')
+    #cProfile.run('game_tick()', sort='cumtime')
 
     cells.sort(key=lambda x: x.mass, reverse=False)
     
+    window.fill(background_color)
+
+
     for p in players:
         if len(p.cells) == 0:
             if p.mode == "player":
@@ -956,14 +960,6 @@ while playing:
             p.cells.append(new_cell)
              
 
-    # for thing in players[player]:
-    #     thing.color = light_blue
-   
-    window.fill(background_color)
-    #print(cells)
-    #print(player.cells)
-    # for player in players:
-    #     player.cells = [cell for cell in cells if cell.player == player]
 
     if len(viruses) < virus_count:
         new_virus = Virus(random.randint(-border_width, border_width), random.randint(-border_height, border_height), virus_mass, Colors.green)
@@ -974,10 +970,10 @@ while playing:
     if len(brown_viruses) < brown_virus_count:
         brown_viruses.append(BrownVirus(random.randint(-border_width, border_width), random.randint(-border_height, border_height), brown_virus_mass, Colors.brown))
    
-    if len(agars) < max_agar_count:
+    if len(agars) < max_agars:
         if frames%int(len(agars)/25000*fps+1) == 0:
             rand_color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-            agars.add(Agar(random.randint(-border_width, border_width), random.randint(-border_height, border_height), random.randint(agar_min_mass, agar_max_mass), rand_color))
+            agars.add(Agar(random.randint(-border_width, border_width), random.randint(-border_height, border_height), agar_min_mass, rand_color))
 
     target_scale = 0
     for thing in player.cells:
@@ -1049,18 +1045,6 @@ while playing:
                 thing.eject_mass()
     if pygame.key.get_pressed()[pygame.K_z]:
         player.split()
-        # for i in range(len(player.cells)):
-        #     if len(player.cells) < player_max_cells and player.cells[i].mass >= player_split_min_mass:
-        #         player.cells[i].split()
-        #         player.cells.append(cells[len(cells)-1])
-
-
-    # if pygame.key.get_pressed()[pygame.K_f]:
-    #     for [player_ in players if player_.mode == "minion"]]:
-    #         for i in range(len(player_.cells[player])):
-    #             if len(player_.cells[player]) < player_max_cells and player.cells[player][i].mass >= player_split_min_mass:
-    #                 player.cells[player][i].split()
-    #                 player.cells[player].append(cells[len(cells)-1])
                 
 
     start_tick_time = time.time()
@@ -1095,14 +1079,13 @@ while playing:
    
     clock.tick(fps)
     if frames % int(fps/2) == 0:
-        fps_ = int(1/(time.time()-start)+0)
+        fps_ = round(1/(time.time()-start))
         last_time = time.time()
     frames += 1
 
-    objects_to_delete = set(objects_to_delete)
 
     agars = set([agar for agar in agars if agar.id not in objects_to_delete])
-    ejected = set([ejected_mass for ejected_mass in ejected if ejected_mass.id not in objects_to_delete])
+    ejected = [ejected_mass for ejected_mass in ejected if ejected_mass.id not in objects_to_delete]
     cells = [cell for cell in cells if cell.id not in objects_to_delete]
     viruses = [virus for virus in viruses if virus.id not in objects_to_delete]
     brown_viruses = [brown_virus for brown_virus in brown_viruses if brown_virus.id not in objects_to_delete]
@@ -1116,11 +1099,14 @@ while playing:
              cells.append(Cell(random.randint(-border_width, border_width), random.randint(-border_height, border_height), player_start_mass, Colors.red, players[i]))
     for p in players:
         p.cells = [cell for cell in p.cells if cell.id not in objects_to_delete]
+
+    objects_to_delete = set()
+
    
 
 pygame.quit()
 
-
+print("Draw time: " + str(draw_time))
 print("Cell time: " + str(cell_time))
 print("Ejected time: " + str(ejected_time))
 print("Virus time: " + str(virus_time))
