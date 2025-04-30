@@ -8,7 +8,7 @@ pygame.init()
 width, height = 1280, 720
 window = pygame.display.set_mode([width, height])
 
-friction = .5
+friction = 0
 class Ball():
     
     def __init__(self, x, y, xspeed, yspeed, size, color):
@@ -75,6 +75,8 @@ def check_colliding(self, other):
         secx = other.xspeed
         secy = other.yspeed
 
+        total_speed = math.sqrt(self.xspeed**2+self.yspeed**2)+math.sqrt(other.xspeed**2+other.yspeed**2)
+        print(f"Total Speed before collision: {total_speed}")
         angle = math.atan2(self.y - other.y, self.x - other.x)
         vector = pygame.math.Vector2(math.cos(angle), math.sin(angle))
         amount = 1
@@ -87,21 +89,28 @@ def check_colliding(self, other):
         # other.xspeed = (math.sqrt((secx*percent_saved+firstx*percent_given)**2+(secy*.25+firsty*percent_given)**2))*-vector[0]/amount*(random.randint(9990, 10010)/10000)
         # other.yspeed = (math.sqrt((secx*percent_saved+firstx*percent_given)**2+(secy*.25+firsty*percent_given)**2))*-vector[1]/amount*(random.randint(9990, 10010)/10000)
 
-        diffx = abs(firstx-secx)
-        diffy = abs(firsty-secy)
-        self.xspeed += diffx*vector[0]
-        self.yspeed += diffy*vector[1]
-        other.xspeed -= diffx*vector[0]
-        other.yspeed -= diffy*vector[1]
+        diffx = (firstx-secx)
+        diffy = (firsty-secy)
+        diff = math.sqrt(diffx**2+diffy**2)
+        #print(f"firstxspeed: {self.xspeed} secondxspeed: {other.xspeed} firstyspeed: {self.yspeed} secondyspeed: {other.yspeed}")
+        #print(f"firstxchangespeed: {diff*vector[0]} secondxchangespeed: {-diff*vector[0]} firstychangespeed: {diff*vector[1]} secondychangespeed: {-diff*vector[1]}")
+        #print(f"diff: {diff}, diffx: {diffx}, diffy: {diffy}")
+        #print(abs(vector[0])+abs(vector[1]))
+        self.xspeed += diff*vector[0]/2
+        self.yspeed += diff*vector[1]/2
+        other.xspeed -= diff*vector[0]/2
+        other.yspeed -= diff*vector[1]/2
         #self.xspeed, other.xspeed = secx*.75+firstx*.25, firstx*.75+secx*.25
         #self.yspeed, other.yspeed = secy*.75+firsty*.25, firsty*.75+secy*.25
-        while (self.x-other.x)**2+(self.y-other.y)**2 < (self.size+other.size)**2 and self.xspeed+self.yspeed+other.xspeed+other.yspeed > 0.0001:
+        while False and (self.x-other.x)**2+(self.y-other.y)**2 < (self.size+other.size)**2 and abs(self.xspeed)+abs(self.yspeed)+abs(other.xspeed)+abs(other.yspeed) > 0.1:
             
             self.x += self.xspeed/fps/20
             self.y += self.yspeed/fps/20
             other.x += other.xspeed/fps/20
             other.y += other.yspeed/fps/20
             #print("YAP")
+        total_speed = math.sqrt(self.xspeed**2+self.yspeed**2)+math.sqrt(other.xspeed**2+other.yspeed**2)
+        print(f"Total Speed after collision: {total_speed}")
         
         
 

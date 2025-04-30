@@ -65,7 +65,7 @@ def tick_buttons():
                     coins -= upgrade_speed_price
                     fidget_spinner_spin_speed *= 1.5
                     upgrade_speed_price *= 4
-                    upgrade_speed_button.update_text("Upgrade Speed: " + str(upgrade_speed_price))
+                    upgrade_speed_button.text = ("Upgrade Speed: " + str(upgrade_speed_price))
                     
             elif button == decrease_friction_button:
                 if coins >= decrease_friction_price:
@@ -74,7 +74,7 @@ def tick_buttons():
                     fidget_spinner_constant_friction = fidget_spinner_multiplicative_friction*500
                     decrease_friction_price *= 4
 
-                    decrease_friction_button.update_text("Decrease Friction: " + str(decrease_friction_price))
+                    decrease_friction_button.text = ("Decrease Friction: " + str(decrease_friction_price))
                     
 
             elif button == fan_button:
@@ -83,20 +83,20 @@ def tick_buttons():
                         coins -= fan_price
                         fan_bought = True
                         fan_on = False
-                        fan_button.update_text("Turn Fan On")
+                        fan_button.text = ("Turn Fan On")
                 else:
                     fan_on = not fan_on
                     if fan_on:
-                        fan_button.update_text("Turn Fan Off")
+                        fan_button.text = ("Turn Fan Off")
                     else:
-                        fan_button.update_text("Turn Fan On")
+                        fan_button.text = ("Turn Fan On")
 
             elif button == fan_upgrade_button:
                 if coins >= fan_upgrade_price:
                     coins -= fan_upgrade_price
                     fan_speed *= 1.5
                     fan_upgrade_price *= 5
-                    fan_upgrade_button.update_text("Upgrade Fan: " + str(fan_upgrade_price))
+                    fan_upgrade_button.text = ("Upgrade Fan: " + str(fan_upgrade_price))
         
             elif button == brake_button:
                 if not brake_bought:
@@ -104,20 +104,20 @@ def tick_buttons():
                         coins -= brake_cost
                         brake_bought = True
                         brake_on = False
-                        brake_button.update_text("Turn Brake On")
+                        brake_button.text = ("Turn Brake On")
                 else:
                     brake_on = not brake_on
                     if brake_on:
-                        brake_button.update_text("Turn Brake Off")
+                        brake_button.text = ("Turn Brake Off")
                     else:
-                        brake_button.update_text("Turn Brake On")
+                        brake_button.text = ("Turn Brake On")
 
             elif button == brake_upgrade_button:
                 if coins >= brake_upgrade_price:
                     coins -= brake_upgrade_price
                     brake_friction *= 1.25
                     brake_upgrade_price *= 15
-                    brake_upgrade_button.update_text("Upgrade Brake: " + str(brake_upgrade_price))
+                    brake_upgrade_button.text = ("Upgrade Brake: " + str(brake_upgrade_price))
 
             else:
                 print("Unknown button clicked")
